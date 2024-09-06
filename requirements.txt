@@ -1,0 +1,4 @@
+psycopg2-binary
+paramiko
+python-telegram-bot==13.7
+python-dotenv

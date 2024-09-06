@@ -1,0 +1,80 @@
+---
+- hosts: bot
+  tasks:
+    - name: Клонирование репозитория и checkout в ветку ansible
+      git:
+        repo: https://github.com/Ivanich41/START
+        dest: /home/vagrant/START
+        version: ansible
+        update: yes
+
+    - name: Установка зависимостей из requirements.txt
+      pip:
+        requirements: /home/vagrant/START/requirements.txt
+        virtualenv: /home/vagrant/venv
+        virtualenv_command: /usr/bin/python3 -m venv
+        state: present
+
+    - name: Запуск main.py в фоновом режиме
+      command: nohup python3 /home/vagrant/START/main.py &
+      args:
+        chdir: /home/vagrant/START
+        creates: /tmp/start.lock
+      async: 1
+      poll: 0
+
+- hosts: pg-primary
+  tasks:
+    - name: Копирование postgresql.conf
+      copy:
+        src: /vagrant/pg_configs/master/postgresql.conf
+        dest: /etc/postgresql/14/main/postgresql.conf
+        owner: postgres
+        group: postgres
+        mode: '0644'
+
+    - name: Копирование pg_hba.conf
+      copy:
+        src: /vagrant/pg_configs/master/pg_hba.conf
+        dest: /etc/postgresql/14/main/pg_hba.conf
+        owner: postgres
+        group: postgres
+        mode: '0644'
+
+    - name: Перезапуск службы postgresql
+      service:
+        name: postgresql
+        state: restarted
+
+- hosts: pg-replica
+  tasks:
+    - name: Копирование postgresql.conf для реплики
+      copy:
+        src: /vagrant/pg_configs/replica/postgresql.conf
+        dest: /etc/postgresql/14/main/postgresql.conf
+        owner: postgres
+        group: postgres
+        mode: '0644'
+
+    - name: Остановка службы postgresql
+      service:
+        name: postgresql
+        state: stopped
+
+    - name: Удаление данных в директории main
+      file:
+        path: /var/lib/postgresql/14/main/
+        state: absent
+
+    - name: Запуск службы postgresql после очистки
+      service:
+        name: postgresql
+        state: started
+
+    - name: Выполнение pg_basebackup
+      command: pg_basebackup -R -h 192.168.50.11 -U repl_user -D /var/lib/postgresql/14/main -P
+      become: yes
+      become_user: postgres
+      register: pg_basebackup_result
+      failed_when: pg_basebackup_result.rc != 0
+      changed_when: False

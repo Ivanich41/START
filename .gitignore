@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-test.py
-=======
-test.py
->>>>>>> testing
+.vagrant 
+.env
+.vscode
