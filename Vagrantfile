@@ -16,7 +16,8 @@ Vagrant.configure("2") do |config|
         primary.vm.network "private_network", ip: "192.168.50.11"
         primary.vm.provision "shell",inline: <<-SHELL
             sudo apt-get update -y
-            sudo apt-get install -y postgresql postgresql-contrib
+            sudo apt-get install -y postgresql postgresql-contrib python3 python3-pip
+            pip install psycopg2-binary
         SHELL
     end
     config.vm.define "pg-replica" do |replica|
@@ -32,7 +33,7 @@ Vagrant.configure("2") do |config|
         ansible.vm.network "private_network", ip: "192.168.50.13"
         ansible.vm.provision "shell",inline: <<-SHELL
             sudo apt-get update -y
-            sudo apt-get install -y  python3 python3-pip
+            sudo apt-get install -y  python3 python3-pip sshpass
             pip3 install ansible
         SHELL
     end

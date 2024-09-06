@@ -1,3 +1,3 @@
 bot ansible_host=192.168.50.10 ansible_user=vagrant ansible_password=vagrant
-host01 ansible_host=192.168.50.11 ansible_user=vagrant ansible_password=vagrant
-host01 ansible_host=192.168.50.12 ansible_user=vagrant ansible_password=vagrant
+primary ansible_host=192.168.50.11 ansible_user=vagrant ansible_password=vagrant
+replica  ansible_host=192.168.50.12 ansible_user=vagrant ansible_password=vagrant

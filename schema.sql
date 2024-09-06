@@ -2,6 +2,7 @@
 DROP TABLE IF EXISTS emails;
 DROP TABLE IF EXISTS phones;
 
+ALTER USER postgres WITH PASSWORD '111';
 CREATE USER repl_user WITH REPLICATION PASSWORD '111';
 
 SELECT pg_create_physical_replication_slot('replication_slot');

@@ -11,11 +11,17 @@
     - name: Установка зависимостей из requirements.txt
       pip:
         requirements: /home/vagrant/START/requirements.txt
-        virtualenv: /home/vagrant/venv
-        virtualenv_command: /usr/bin/python3 -m venv
         state: present
 
-    - name: Запуск main.py в фоновом режиме
+    - name: Копирование .env файла с контроллера на удалённый хост
+      copy:
+        src: /home/vagrant/.env
+        dest: /home/vagrant/START/.env
+        owner: vagrant
+        group: vagrant
+        mode: '0644'
+
+    - name: Запуск main.py в nohup
       command: nohup python3 /home/vagrant/START/main.py &
       args:
         chdir: /home/vagrant/START
@@ -23,11 +29,12 @@
       async: 1
       poll: 0
 
-- hosts: pg-primary
+- hosts: primary
+  become: True
   tasks:
     - name: Копирование postgresql.conf
       copy:
-        src: /vagrant/pg_configs/master/postgresql.conf
+        src: /home/vagrant/pg_configs/primary/postgresql.conf
         dest: /etc/postgresql/14/main/postgresql.conf
         owner: postgres
         group: postgres
@@ -35,7 +42,7 @@
 
     - name: Копирование pg_hba.conf
       copy:
-        src: /vagrant/pg_configs/master/pg_hba.conf
+        src: /home/vagrant/pg_configs/primary/pg_hba.conf
         dest: /etc/postgresql/14/main/pg_hba.conf
         owner: postgres
         group: postgres
@@ -46,7 +53,21 @@
         name: postgresql
         state: restarted
 
-- hosts: pg-replica
+    - name: Создание базы данных homework
+      become: yes
+      become_user: postgres
+      postgresql_db:
+        name: homework
+        state: present
+        login_user: postgres
+
+    - name: Загрузка схемы из файла schema.sql
+      become: yes
+      become_user: postgres
+      command: psql homework -f /vagrant/schema.sql
+
+- hosts: replica
+  become: True
   tasks:
     - name: Копирование postgresql.conf для реплики
       copy:
@@ -72,9 +93,11 @@
         state: started
 
     - name: Выполнение pg_basebackup
-      command: pg_basebackup -R -h 192.168.50.11 -U repl_user -D /var/lib/postgresql/14/main -P
       become: yes
       become_user: postgres
+      command: pg_basebackup -R -h 192.168.50.11 -U repl_user -D /var/lib/postgresql/14/main -P
+      environment:
+        PGPASSWORD: "111"
       register: pg_basebackup_result
       failed_when: pg_basebackup_result.rc != 0
       changed_when: False
