@@ -20,7 +20,7 @@ vagrant ssh anisble
 
 3. Переместить данные в /home/vagrant
 ```
-cp -R /vagrant /home/vagrant
+cp -R /vagrant/* /home/vagrant
 ```
 
 4. Запустить плейбук из директории /home/vagrant
